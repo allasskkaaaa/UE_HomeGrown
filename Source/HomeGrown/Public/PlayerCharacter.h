@@ -10,6 +10,8 @@ class UCameraComponent;
 class UInputMappingContext;
 class UInputAction;
 
+class ACarrot;
+
 UCLASS()
 class HOMEGROWN_API APlayerCharacter : public ACharacter
 {
@@ -17,6 +19,9 @@ class HOMEGROWN_API APlayerCharacter : public ACharacter
 
 public:
 	APlayerCharacter();
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Planting")
+	TSubclassOf<ACarrot> PlantClass;
 
 protected:
 	virtual void BeginPlay() override;
@@ -37,6 +42,7 @@ protected:
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
 	void LineTrace();
+	void SpawnPlant(FVector spawnLocation);
 
 public:
 	virtual void Tick(float DeltaTime) override;

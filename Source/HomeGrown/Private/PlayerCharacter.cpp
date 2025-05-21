@@ -7,23 +7,27 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
 #include "InputAction.h"
+#include "Carrot.h"
 
 // Sets default values
 APlayerCharacter::APlayerCharacter()
 {
- 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Player Camera"));
-	Camera->SetupAttachment(RootComponent); 
-	
+	Camera->SetupAttachment(RootComponent);
 
+	// Initialize with default values
+	PlantClass = nullptr;
 }
+
 
 // Called when the game starts or when spawned
 void APlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+
 
 	APlayerController* PlayerController = Cast<APlayerController>(Controller);
 	if (PlayerController)
@@ -71,6 +75,11 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
 }
 
+void APlayerCharacter::SpawnPlant(FVector spawnLocation)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Spawned at: %s"), *spawnLocation.ToString());
+}
+
 void APlayerCharacter::Move(const FInputActionValue& Value)
 {
 	FVector2D Input = Value.Get<FVector2D>();
@@ -87,27 +96,60 @@ void APlayerCharacter::Look(const FInputActionValue& Value)
 
 void APlayerCharacter::LineTrace()
 {
-	FHitResult HitResult;
-	FVector Start = Camera->GetComponentLocation();
-	FVector End = Start + (Camera->GetForwardVector() * 1000.0f);
+    if (!Camera)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Camera is null!"));
+        return;
+    }
 
-	FCollisionQueryParams QueryParams;
-	QueryParams.AddIgnoredActor(this);
+    FHitResult HitResult;
+    FVector Start = Camera->GetComponentLocation();
+    FVector End = Start + (Camera->GetForwardVector() * 1000.0f);
 
-	bool bHit = GetWorld()->LineTraceSingleByChannel(
-		HitResult,
-		Start,
-		End,
-		ECC_Visibility,
-		QueryParams
-	);
+    FCollisionQueryParams Params;
+    Params.AddIgnoredActor(this);
 
-	if (bHit && HitResult.GetActor())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Hit: %s"), *HitResult.GetActor()->GetName());
-	}
+    bool bHit = GetWorld()->LineTraceSingleByChannel(
+        HitResult, Start, End, ECC_WorldStatic, Params
+    );
 
-	// Optional: draw debug line
-	DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 1.0f, 0, 2.0f);
+    // Debug Drawing
+    DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 2.0f);
+    if (bHit) DrawDebugPoint(GetWorld(), HitResult.ImpactPoint, 15.0f, FColor::Green, false, 2.0f);
+
+    if (bHit)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Hit: %s"), *HitResult.GetActor()->GetName());
+
+        if (!PlantClass)
+        {
+            UE_LOG(LogTemp, Error, TEXT("PlantClass is NOT assigned!"));
+            return;
+        }
+
+        FVector SpawnLocation = HitResult.ImpactPoint + (HitResult.ImpactNormal * 5.0f);
+
+        FActorSpawnParameters SpawnParams;
+        // Changed to AlwaysSpawn - will spawn regardless of collisions
+        SpawnParams.SpawnCollisionHandlingOverride =
+            ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+        AActor* SpawnedActor = GetWorld()->SpawnActor<AActor>(
+            PlantClass,
+            FTransform(SpawnLocation),
+            SpawnParams
+        );
+
+        if (SpawnedActor)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("SPAWNED: %s"), *SpawnedActor->GetName());
+            DrawDebugSphere(GetWorld(), SpawnLocation, 25.0f, 12, FColor::Blue, false, 3.0f);
+        }
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("FAILED TO SPAWN!"));
+        }
+    }
 }
+
 
