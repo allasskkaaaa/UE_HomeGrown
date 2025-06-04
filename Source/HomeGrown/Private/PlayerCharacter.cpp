@@ -3,11 +3,14 @@
 
 #include "PlayerCharacter.h"
 #include "Camera/CameraComponent.h"
+#include "PlayerHUD.h"
+#include "Blueprint/UserWidget.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
 #include "InputAction.h"
 #include "Carrot.h"
+#include "Planting_Ground.h"
 
 // Sets default values
 APlayerCharacter::APlayerCharacter()
@@ -19,6 +22,9 @@ APlayerCharacter::APlayerCharacter()
 
 	// Initialize with default values
 	PlantClass = nullptr;
+	PlayerHUDClass = nullptr;
+	PlayerHUD = nullptr;
+	wallet = 0;
 }
 
 
@@ -27,7 +33,15 @@ void APlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (IsLocallyControlled() && PlayerHUDClass)
+	{
+		APlayerController* PC = GetController<APlayerController>();
+		check(PC);
+		PlayerHUD = CreateWidget<UPlayerHUD>(PC, PlayerHUDClass);
+		check(PlayerHUD);
+		PlayerHUD->AddToPlayerScreen();
 
+	}
 
 	APlayerController* PlayerController = Cast<APlayerController>(Controller);
 	if (PlayerController)
@@ -43,6 +57,17 @@ void APlayerCharacter::BeginPlay()
 		}
 	}
 	
+}
+
+void APlayerCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (PlayerHUD)
+	{
+		PlayerHUD->RemoveFromParent();
+		PlayerHUD = nullptr;
+	}
+
+	Super::EndPlay(EndPlayReason);
 }
 
 // Called every frame
@@ -96,60 +121,92 @@ void APlayerCharacter::Look(const FInputActionValue& Value)
 
 void APlayerCharacter::LineTrace()
 {
-    if (!Camera)
-    {
-        UE_LOG(LogTemp, Error, TEXT("Camera is null!"));
-        return;
-    }
+	if (!Camera)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Camera is null!"));
+		return;
+	}
 
-    FHitResult HitResult;
-    FVector Start = Camera->GetComponentLocation();
-    FVector End = Start + (Camera->GetForwardVector() * 1000.0f);
+	FHitResult HitResult;
+	FVector Start = Camera->GetComponentLocation();
+	FVector End = Start + (Camera->GetForwardVector() * 1000.0f);
 
-    FCollisionQueryParams Params;
-    Params.AddIgnoredActor(this);
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
 
-    bool bHit = GetWorld()->LineTraceSingleByChannel(
-        HitResult, Start, End, ECC_WorldStatic, Params
-    );
+	bool bHit = GetWorld()->LineTraceSingleByChannel(
+		HitResult, Start, End, ECC_WorldStatic, Params
+	);
 
-    // Debug Drawing
-    DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 2.0f);
-    if (bHit) DrawDebugPoint(GetWorld(), HitResult.ImpactPoint, 15.0f, FColor::Green, false, 2.0f);
+	// Debug Drawing
+	DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 2.0f);
+	if (bHit) DrawDebugPoint(GetWorld(), HitResult.ImpactPoint, 15.0f, FColor::Green, false, 2.0f);
 
-    if (bHit)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("Hit: %s"), *HitResult.GetActor()->GetName());
+	if (bHit)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Hit: %s"), *HitResult.GetActor()->GetName());
 
-        if (!PlantClass)
-        {
-            UE_LOG(LogTemp, Error, TEXT("PlantClass is NOT assigned!"));
-            return;
-        }
+		// Check if we hit a Planting_Ground actor
+		APlanting_Ground* PlantingGround = Cast<APlanting_Ground>(HitResult.GetActor());
+		if (PlantingGround)
+		{
+			// Call SetWateredState on the hit Planting_Ground
+			if (!PlantingGround->bIsWatered) {
+				PlantingGround->SetWateredState();
+				UE_LOG(LogTemp, Log, TEXT("Watered planting ground!"));
+				return; // Exit after watering, don't try to spawn plant
+			}
+			
+			if (!PlantClass)
+			{
+				UE_LOG(LogTemp, Error, TEXT("PlantClass is NOT assigned!"));
+				return;
+			}
 
-        FVector SpawnLocation = HitResult.ImpactPoint + (HitResult.ImpactNormal * 5.0f);
+			FVector SpawnLocation = HitResult.ImpactPoint + (HitResult.ImpactNormal * 5.0f);
 
-        FActorSpawnParameters SpawnParams;
-        // Changed to AlwaysSpawn - will spawn regardless of collisions
-        SpawnParams.SpawnCollisionHandlingOverride =
-            ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride =
+				ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-        AActor* SpawnedActor = GetWorld()->SpawnActor<AActor>(
-            PlantClass,
-            FTransform(SpawnLocation),
-            SpawnParams
-        );
+			AActor* SpawnedActor = GetWorld()->SpawnActor<AActor>(
+				PlantClass,
+				FTransform(SpawnLocation),
+				SpawnParams
+			);
 
-        if (SpawnedActor)
-        {
-            UE_LOG(LogTemp, Warning, TEXT("SPAWNED: %s"), *SpawnedActor->GetName());
-            DrawDebugSphere(GetWorld(), SpawnLocation, 25.0f, 12, FColor::Blue, false, 3.0f);
-        }
-        else
-        {
-            UE_LOG(LogTemp, Error, TEXT("FAILED TO SPAWN!"));
-        }
-    }
+			if (SpawnedActor)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("SPAWNED: %s"), *SpawnedActor->GetName());
+				DrawDebugSphere(GetWorld(), SpawnLocation, 25.0f, 12, FColor::Blue, false, 3.0f);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("FAILED TO SPAWN!"));
+			}
+		}
+
+		// Check if we hit a Carrot actor
+		if (ACarrot* hitCarrot = Cast<ACarrot>(HitResult.GetActor()))
+		{
+			if (hitCarrot->bIsFullGrown)
+			{
+				wallet = wallet + hitCarrot->SellAmount;
+
+				if (IsValid(hitCarrot))
+				{
+					hitCarrot->Destroy();
+					UE_LOG(LogTemp, Log, TEXT("Destroyed fully grown carrot!"));
+				}
+
+				if (PlayerHUD)
+				{
+					PlayerHUD->SetMoney(wallet);
+				}
+			}
+		}
+		
+	}
 }
 
 

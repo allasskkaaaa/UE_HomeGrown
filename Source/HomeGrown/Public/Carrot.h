@@ -20,6 +20,9 @@ public:
     meta = (ClampMin = "0"))
     int32 Quantity = 1;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Growth")
+    bool bIsFullGrown;
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Growth",
         meta = (ClampMin = "0.1"))
     float GrowthDuration = 10.0f;  // Time in seconds to reach full size

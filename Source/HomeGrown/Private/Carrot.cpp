@@ -17,6 +17,7 @@ ACarrot::ACarrot()
     Hydration = 0.0f;
     SellAmount = 10;
     CostAmount = 5;
+    bIsFullGrown = false;
 }
 
 // Called when the game starts or when spawned
@@ -47,6 +48,8 @@ void ACarrot::Tick(float DeltaTime)
 
         // Set new scale (uniform scaling)
         CarrotMeshComponent->SetWorldScale3D(FVector(ScaleValue));
+
+        bIsFullGrown = true;
     }
 
 }

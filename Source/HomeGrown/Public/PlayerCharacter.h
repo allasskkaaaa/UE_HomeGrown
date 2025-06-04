@@ -3,7 +3,6 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "InputActionValue.h" // Needed for FInputActionValue
-
 #include "PlayerCharacter.generated.h"
 
 class UCameraComponent;
@@ -25,6 +24,8 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	// Input Actions and Mapping Context
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
@@ -51,4 +52,13 @@ public:
 	// Player camera
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	UCameraComponent* Camera;
+
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class UPlayerHUD> PlayerHUDClass;
+
+	UPROPERTY()
+	class UPlayerHUD* PlayerHUD;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float wallet;
 };
