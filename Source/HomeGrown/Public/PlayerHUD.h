@@ -13,7 +13,12 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetMoney(float currentMoney);
 
+	UFUNCTION(BlueprintCallable)
+	void UpdateProgress(float currentProgress);
+
 	UPROPERTY(EditAnywhere, meta = (BindWidget))
 	class UTextBlock* MoneyTracker;
 
+	UPROPERTY(EditAnywhere, meta = (BindWidget))
+	class UProgressBar* MoneyBar;
 };

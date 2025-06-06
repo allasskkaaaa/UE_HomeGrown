@@ -2,6 +2,8 @@
 
 
 #include "PlayerCharacter.h"
+#include "Components/Button.h"
+#include "GameFramework/InputSettings.h"
 #include "Camera/CameraComponent.h"
 #include "PlayerHUD.h"
 #include "Blueprint/UserWidget.h"
@@ -11,6 +13,7 @@
 #include "InputAction.h"
 #include "Carrot.h"
 #include "Planting_Ground.h"
+#include "MainMenuHUD.h"
 
 // Sets default values
 APlayerCharacter::APlayerCharacter()
@@ -21,10 +24,13 @@ APlayerCharacter::APlayerCharacter()
 	Camera->SetupAttachment(RootComponent);
 
 	// Initialize with default values
+	MainMenuHUD = nullptr;
+	MainMenuHUDClass = nullptr;
 	PlantClass = nullptr;
 	PlayerHUDClass = nullptr;
 	PlayerHUD = nullptr;
 	wallet = 0;
+	endGoal = 100;
 }
 
 
@@ -33,14 +39,23 @@ void APlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (IsLocallyControlled() && PlayerHUDClass)
+	if (IsLocallyControlled())
 	{
 		APlayerController* PC = GetController<APlayerController>();
 		check(PC);
-		PlayerHUD = CreateWidget<UPlayerHUD>(PC, PlayerHUDClass);
-		check(PlayerHUD);
-		PlayerHUD->AddToPlayerScreen();
 
+		// Create but don't show immediately
+		if (PlayerHUDClass)
+		{
+			PlayerHUD = CreateWidget<UPlayerHUD>(PC, PlayerHUDClass);
+			PlayerHUD->AddToViewport();
+		}
+
+		if (MainMenuHUDClass)
+		{
+			MainMenuHUD = CreateWidget<UMainMenuHUD>(PC, MainMenuHUDClass);
+			ShowMainMenu();
+		}
 	}
 
 	APlayerController* PlayerController = Cast<APlayerController>(Controller);
@@ -202,11 +217,65 @@ void APlayerCharacter::LineTrace()
 				if (PlayerHUD)
 				{
 					PlayerHUD->SetMoney(wallet);
+					PlayerHUD->UpdateProgress(wallet/endGoal);
 				}
 			}
 		}
 		
 	}
 }
+void APlayerCharacter::SetUIOnlyInputMode()
+{
+	if (APlayerController* PC = GetController<APlayerController>())
+	{
+		FInputModeUIOnly InputMode;
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		PC->SetInputMode(InputMode);
+		PC->bShowMouseCursor = true;
+	}
+}
+
+void APlayerCharacter::SetGameOnlyInputMode()
+{
+	if (APlayerController* PC = GetController<APlayerController>())
+	{
+		FInputModeGameOnly InputMode;
+		PC->SetInputMode(InputMode);
+		PC->bShowMouseCursor = false;
+	}
+}
+
+void APlayerCharacter::ShowMainMenu()
+{
+	if (MainMenuHUD)
+	{
+		MainMenuHUD->StartButton->SetVisibility(ESlateVisibility::Visible);
+		MainMenuHUD->ReplayButton->SetVisibility(ESlateVisibility::Collapsed);
+
+		MainMenuHUD->AddToViewport();
+		SetUIOnlyInputMode();
+	}
+}
+
+void APlayerCharacter::ShowEndMenu()
+{
+	if (MainMenuHUD)
+	{
+		
+		MainMenuHUD->EndScreen();
+		MainMenuHUD->AddToViewport();
+		SetUIOnlyInputMode();
+	}
+}
+
+void APlayerCharacter::HideMainMenu()
+{
+	if (MainMenuHUD)
+	{
+		MainMenuHUD->RemoveFromParent();
+		SetGameOnlyInputMode();
+	}
+}
+
 
 

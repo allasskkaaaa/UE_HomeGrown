@@ -48,6 +48,11 @@ protected:
 public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	void SetUIOnlyInputMode();
+	void SetGameOnlyInputMode();
+	void ShowMainMenu();
+	void ShowEndMenu();
+	void HideMainMenu();
 
 	// Player camera
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
@@ -61,4 +66,14 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float wallet;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float endGoal;
+
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class UMainMenuHUD> MainMenuHUDClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	class UMainMenuHUD* MainMenuHUD;
+
 };
