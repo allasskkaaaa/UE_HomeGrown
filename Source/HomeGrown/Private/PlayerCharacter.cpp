@@ -2,6 +2,7 @@
 
 
 #include "PlayerCharacter.h"
+#include "Shop.h"
 #include "Components/Button.h"
 #include "GameFramework/InputSettings.h"
 #include "Camera/CameraComponent.h"
@@ -39,40 +40,37 @@ void APlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (IsLocallyControlled())
+	APlayerController* PC = Cast<APlayerController>(Controller);
+	if (!PC || !IsLocallyControlled())
 	{
-		APlayerController* PC = GetController<APlayerController>();
-		check(PC);
-
-		// Create but don't show immediately
-		if (PlayerHUDClass)
-		{
-			PlayerHUD = CreateWidget<UPlayerHUD>(PC, PlayerHUDClass);
-			PlayerHUD->AddToViewport();
-		}
-
-		if (MainMenuHUDClass)
-		{
-			MainMenuHUD = CreateWidget<UMainMenuHUD>(PC, MainMenuHUDClass);
-			ShowMainMenu();
-		}
+		return;
 	}
 
-	APlayerController* PlayerController = Cast<APlayerController>(Controller);
-	if (PlayerController)
+	// Setup HUD widgets
+	if (PlayerHUDClass)
 	{
-		if (ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer())
+		PlayerHUD = CreateWidget<UPlayerHUD>(PC, PlayerHUDClass);
+	}
+
+	if (MainMenuHUDClass)
+	{
+		MainMenuHUD = CreateWidget<UMainMenuHUD>(PC, MainMenuHUDClass);
+		ShowMainMenu();
+	}
+
+	// Setup Enhanced Input
+	if (ULocalPlayer* LocalPlayer = PC->GetLocalPlayer())
+	{
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
 		{
-			UEnhancedInputLocalPlayerSubsystem* Subsystem =
-				LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
-			if (Subsystem && DefaultMappingContext)
+			if (DefaultMappingContext)
 			{
 				Subsystem->AddMappingContext(DefaultMappingContext, 0);
 			}
 		}
 	}
-	
 }
+
 
 void APlayerCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
@@ -154,7 +152,7 @@ void APlayerCharacter::LineTrace()
 	);
 
 	// Debug Drawing
-	DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 2.0f);
+	//DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 2.0f);
 	if (bHit) DrawDebugPoint(GetWorld(), HitResult.ImpactPoint, 15.0f, FColor::Green, false, 2.0f);
 
 	if (bHit)
@@ -171,6 +169,49 @@ void APlayerCharacter::LineTrace()
 				UE_LOG(LogTemp, Log, TEXT("Watered planting ground!"));
 				return; // Exit after watering, don't try to spawn plant
 			}
+			else if (PlantingGround->bIsWatered && currentSeedAmount > 0)
+			{
+
+				FVector SpawnLocation = HitResult.ImpactPoint + (HitResult.ImpactNormal * 5.0f);
+
+				FActorSpawnParameters SpawnParams;
+				SpawnParams.SpawnCollisionHandlingOverride =
+					ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+				AActor* SpawnedActor = GetWorld()->SpawnActor<AActor>(
+					PlantClass,
+					FTransform(SpawnLocation),
+					SpawnParams
+				);
+
+				currentSeedAmount -= 1;
+				PlayerHUD->UpdateSeedTracker(currentSeedAmount);
+
+
+				UE_LOG(LogTemp, Log, TEXT("1 plant spawned."));
+
+				if (SpawnedActor)
+				{
+					UE_LOG(LogTemp, Warning, TEXT("SPAWNED: %s"), *SpawnedActor->GetName());
+					//DrawDebugSphere(GetWorld(), SpawnLocation, 25.0f, 12, FColor::Blue, false, 3.0f);
+
+					ACarrot* SpawnedCarrot = Cast<ACarrot>(SpawnedActor);
+					if (SpawnedCarrot)
+					{
+						PlantingGround->PlantedCarrots.Add(SpawnedCarrot);
+					}
+
+				}
+				else
+				{
+					UE_LOG(LogTemp, Error, TEXT("FAILED TO SPAWN!"));
+				}
+			}
+			else if (PlantingGround->bIsWatered && currentSeedAmount <= 0)
+			{
+				UE_LOG(LogTemp, Log, TEXT("Out of seeds!"));
+				return;
+			}
 			
 			if (!PlantClass)
 			{
@@ -178,27 +219,8 @@ void APlayerCharacter::LineTrace()
 				return;
 			}
 
-			FVector SpawnLocation = HitResult.ImpactPoint + (HitResult.ImpactNormal * 5.0f);
 
-			FActorSpawnParameters SpawnParams;
-			SpawnParams.SpawnCollisionHandlingOverride =
-				ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-			AActor* SpawnedActor = GetWorld()->SpawnActor<AActor>(
-				PlantClass,
-				FTransform(SpawnLocation),
-				SpawnParams
-			);
-
-			if (SpawnedActor)
-			{
-				UE_LOG(LogTemp, Warning, TEXT("SPAWNED: %s"), *SpawnedActor->GetName());
-				DrawDebugSphere(GetWorld(), SpawnLocation, 25.0f, 12, FColor::Blue, false, 3.0f);
-			}
-			else
-			{
-				UE_LOG(LogTemp, Error, TEXT("FAILED TO SPAWN!"));
-			}
+			
 		}
 
 		// Check if we hit a Carrot actor
@@ -220,6 +242,12 @@ void APlayerCharacter::LineTrace()
 					PlayerHUD->UpdateProgress(wallet/endGoal);
 				}
 			}
+		}
+
+		if (AShop* hitShop = Cast<AShop>(HitResult.GetActor()))
+		{
+			UE_LOG(LogTemp, Log, TEXT("Shop hit!"));
+			hitShop->purchase(hitShop->shopItem, this);
 		}
 		
 	}
@@ -264,6 +292,7 @@ void APlayerCharacter::ShowEndMenu()
 		
 		MainMenuHUD->EndScreen();
 		MainMenuHUD->AddToViewport();
+		PlayerHUD->RemoveFromParent();
 		SetUIOnlyInputMode();
 	}
 }
@@ -273,6 +302,7 @@ void APlayerCharacter::HideMainMenu()
 	if (MainMenuHUD)
 	{
 		MainMenuHUD->RemoveFromParent();
+		PlayerHUD->AddToViewport();
 		SetGameOnlyInputMode();
 	}
 }

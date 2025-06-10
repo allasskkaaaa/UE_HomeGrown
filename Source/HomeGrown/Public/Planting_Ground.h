@@ -6,6 +6,8 @@
 #include "GameFramework/Actor.h"
 #include "Planting_Ground.generated.h"
 
+class ACarrot;
+
 UCLASS()
 class HOMEGROWN_API APlanting_Ground : public AActor
 {
@@ -17,6 +19,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components")
 	UStaticMeshComponent* GroundMeshComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components")
+	TArray<ACarrot*> PlantedCarrots;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ground Properties")
 	UMaterialInstance* DryMaterial;
@@ -42,4 +47,6 @@ public:
 
 	void SetWateredState();
 	void EndWatering();
+	void WaterPlants();
+	void UnWaterPlants();
 };

@@ -14,10 +14,16 @@ public:
 	void SetMoney(float currentMoney);
 
 	UFUNCTION(BlueprintCallable)
+	void UpdateSeedTracker(float currentSeedAmount);
+
+	UFUNCTION(BlueprintCallable)
 	void UpdateProgress(float currentProgress);
 
 	UPROPERTY(EditAnywhere, meta = (BindWidget))
 	class UTextBlock* MoneyTracker;
+
+	UPROPERTY(EditAnywhere, meta = (BindWidget))
+	class UTextBlock* SeedTracker;
 
 	UPROPERTY(EditAnywhere, meta = (BindWidget))
 	class UProgressBar* MoneyBar;

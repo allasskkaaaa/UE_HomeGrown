@@ -68,6 +68,9 @@ public:
 	float wallet;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 currentSeedAmount;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float endGoal;
 
 	UPROPERTY(EditAnywhere)

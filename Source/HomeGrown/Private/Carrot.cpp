@@ -13,11 +13,11 @@ ACarrot::ACarrot()
     SetRootComponent(CarrotMeshComponent);
     CarrotMeshComponent->SetCollisionProfileName(TEXT("BlockAllDynamic"));
 
-    // Initialize default values (optional - already set in header)
-    Hydration = 0.0f;
+    // Initialize default values
     SellAmount = 10;
     CostAmount = 5;
     bIsFullGrown = false;
+    bIsWatered = true;
 }
 
 // Called when the game starts or when spawned
@@ -25,7 +25,7 @@ void ACarrot::BeginPlay()
 {
     Super::BeginPlay();
 
-    CarrotMeshComponent->SetWorldScale3D(FVector(0.f));
+    CarrotMeshComponent->SetWorldScale3D(FVector(StartScale));
     CurrentGrowthTime = 0.0f;
 
 }
@@ -35,7 +35,8 @@ void ACarrot::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
 
-    if (CurrentGrowthTime < GrowthDuration)
+    //Scales the carrot if not already full grown and watered
+    if (CurrentGrowthTime < GrowthDuration && bIsWatered)
     {
         // Update growth timer
         CurrentGrowthTime += DeltaTime;
@@ -49,7 +50,11 @@ void ACarrot::Tick(float DeltaTime)
         // Set new scale (uniform scaling)
         CarrotMeshComponent->SetWorldScale3D(FVector(ScaleValue));
 
+    }
+    else if (CurrentGrowthTime >= GrowthDuration)
+    {
         bIsFullGrown = true;
     }
+    
 
 }
