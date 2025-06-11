@@ -16,8 +16,7 @@ class HOMEGROWN_API AShop : public AActor
 	GENERATED_BODY()
 	
 public:	
-	// Sets default values for this actor's properties
-	AShop();
+
 
 public:	
 

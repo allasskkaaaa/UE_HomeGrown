@@ -83,13 +83,6 @@ void APlayerCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 }
 
-// Called every frame
-void APlayerCharacter::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-}
-
 // Called to bind functionality to input
 void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
@@ -113,10 +106,6 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
 }
 
-void APlayerCharacter::SpawnPlant(FVector spawnLocation)
-{
-	UE_LOG(LogTemp, Warning, TEXT("Spawned at: %s"), *spawnLocation.ToString());
-}
 
 void APlayerCharacter::Move(const FInputActionValue& Value)
 {
@@ -153,7 +142,7 @@ void APlayerCharacter::LineTrace()
 
 	// Debug Drawing
 	//DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 2.0f);
-	if (bHit) DrawDebugPoint(GetWorld(), HitResult.ImpactPoint, 15.0f, FColor::Green, false, 2.0f);
+	//if (bHit) DrawDebugPoint(GetWorld(), HitResult.ImpactPoint, 15.0f, FColor::Green, false, 2.0f);
 
 	if (bHit)
 	{

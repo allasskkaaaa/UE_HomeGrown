@@ -9,25 +9,24 @@ class APlayerCharacter;
 
 void UMainMenuHUD::NativeConstruct()
 {
-    Super::NativeConstruct(); 
+    Super::NativeConstruct();
 
-    // Bind button events
-    if (StartButton) 
+    if (StartButton && !StartButton->OnClicked.IsAlreadyBound(this, &UMainMenuHUD::StartGame))
     {
         StartButton->OnClicked.AddDynamic(this, &UMainMenuHUD::StartGame);
     }
 
-    if (ExitButton) 
+    if (ExitButton && !ExitButton->OnClicked.IsAlreadyBound(this, &UMainMenuHUD::ExitGame))
     {
         ExitButton->OnClicked.AddDynamic(this, &UMainMenuHUD::ExitGame);
     }
 
-    if (ReplayButton)
+    if (ReplayButton && !ReplayButton->OnClicked.IsAlreadyBound(this, &UMainMenuHUD::RestartGame))
     {
         ReplayButton->OnClicked.AddDynamic(this, &UMainMenuHUD::RestartGame);
     }
-    
 }
+
 
 void UMainMenuHUD::StartGame()
 {

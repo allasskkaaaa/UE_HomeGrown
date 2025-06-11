@@ -6,11 +6,7 @@
 #include "PlayerHUD.h"
 
 
-// Sets default values
-AShop::AShop()
-{
 
-}
 
 //Adds to the amount of seeds the player has
 void AShop::purchase(TSubclassOf<ACarrot> item, APlayerCharacter* player)

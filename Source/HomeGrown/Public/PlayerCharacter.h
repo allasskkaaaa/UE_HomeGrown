@@ -43,10 +43,8 @@ protected:
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
 	void LineTrace();
-	void SpawnPlant(FVector spawnLocation);
 
 public:
-	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	void SetUIOnlyInputMode();
 	void SetGameOnlyInputMode();

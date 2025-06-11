@@ -35,9 +35,6 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
     float CurrentGrowthTime = 0.0f;
 
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Components")
-    float SapSpeed = 1.0f; //How fast it takes water from the ground
-
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components",
         meta = (ClampMin = "0.1"))
     float MaxScale = 1.0f;  // Maximum size multiplier
